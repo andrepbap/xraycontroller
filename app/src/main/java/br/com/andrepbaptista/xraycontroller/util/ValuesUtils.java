@@ -51,7 +51,7 @@ public class ValuesUtils {
                 value = "04";
                 break;
             case "0,8":
-                value = "10";
+                value = "05";
                 break;
             case "10":
                 value = "06";

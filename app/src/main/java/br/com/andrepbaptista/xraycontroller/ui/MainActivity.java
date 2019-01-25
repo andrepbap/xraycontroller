@@ -34,7 +34,7 @@ public class MainActivity extends Activity {
     Button btnSearch;
     EditText edtTime;
 
-    public static final String ERROR_SET_TIME = "Aguarde o dispositivo ser conectado.";
+    public static final String ERROR_SET_TIME = "Não foi possível modificar o tempo.";
     public static final String SUCCESS_SET_TIME = "Tempo modificado com sucesso para ";
     public static final String CONNECTION_ERROR = "A comunicação com o dispositivo falhou.";
     private final String SCANNING = "Procurando dispositivo...";
@@ -135,13 +135,10 @@ public class MainActivity extends Activity {
             return;
         }
 
-        String timeString = edtTime.getText().toString();
-        String characteristicValue = ValuesUtils.timeToHexString(timeString);
+        String characteristicValue = ValuesUtils.timeToHexString(edtTime.getText().toString());
 
         characteristic.setValue(ValuesUtils.hexStringToByteArray(characteristicValue));
-        if(bluetoothGatt.writeCharacteristic(characteristic)) {
-            Toast.makeText(this, SUCCESS_SET_TIME + timeString + "s", Toast.LENGTH_LONG).show();
-        }
+        bluetoothGatt.writeCharacteristic(characteristic);
     }
 
     private void scanLeDevice(final boolean enable) {
@@ -193,13 +190,7 @@ public class MainActivity extends Activity {
                         BluetoothGattService service = gatt.getService(SERVICE_UUID);
                         gatt.readCharacteristic(service.getCharacteristic(CHARACTERISTIC_UUID));
                     } else {
-                        mHandler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                lblScanning.setText(CONNECTION_ERROR);
-                                btnSearch.setVisibility(View.VISIBLE);
-                            }
-                        });
+                        showConnectionError();
                     }
                 }
 
@@ -211,26 +202,49 @@ public class MainActivity extends Activity {
                         MainActivity.this.characteristic = characteristic;
                         lblScanning.setText(CONNECTED);
 
-                        String hexString = ValuesUtils.byteArrayToHexString(characteristic.getValue());
-                        int timesListIndex = ValuesUtils.hexStringToTimeListIndex(hexString);
-                        MainActivity.this.timesListIndex = timesListIndex;
-
-                        mHandler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                edtTime.setEnabled(true);
-                                edtTime.setText(times.get(MainActivity.this.timesListIndex));
-                            }
-                        });
+                        refreshCharacteristic(characteristic);
                     } else {
-                        mHandler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                lblScanning.setText(CONNECTION_ERROR);
-                                btnSearch.setVisibility(View.VISIBLE);
-                            }
-                        });
+                        showConnectionError();
+                    }
+                }
+
+                @Override
+                public void onCharacteristicWrite(BluetoothGatt gatt,
+                                                  BluetoothGattCharacteristic characteristic,
+                                                  int status) {
+                    if (status == BluetoothGatt.GATT_SUCCESS) {
+                        refreshCharacteristic(characteristic);
+                    } else {
+                        Toast.makeText(MainActivity.this, ERROR_SET_TIME, Toast.LENGTH_LONG).show();
                     }
                 }
             };
+
+    private void showConnectionError() {
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                lblScanning.setText(CONNECTION_ERROR);
+                btnSearch.setVisibility(View.VISIBLE);
+            }
+        });
+    }
+
+    private void refreshCharacteristic(BluetoothGattCharacteristic characteristic) {
+        String hexString = ValuesUtils.byteArrayToHexString(characteristic.getValue());
+        int timesListIndex = ValuesUtils.hexStringToTimeListIndex(hexString);
+        MainActivity.this.timesListIndex = timesListIndex;
+
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                String timeString = times.get(MainActivity.this.timesListIndex);
+
+                edtTime.setEnabled(true);
+                edtTime.setText(timeString);
+
+                Toast.makeText(MainActivity.this, SUCCESS_SET_TIME + timeString, Toast.LENGTH_LONG).show();
+            }
+        });
+    }
 }

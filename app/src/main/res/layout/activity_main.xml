@@ -38,7 +38,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.5" />
+        app:layout_constraintVertical_bias="0.25" />
 
     <EditText
         android:id="@+id/edtTime"
@@ -46,11 +46,34 @@
         android:layout_height="wrap_content"
         android:inputType="number"
         android:ems="5"
+        android:enabled="false"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/lblTime"
         app:layout_constraintVertical_bias="0"/>
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="-"
+        app:layout_constraintRight_toLeftOf="@id/edtTime"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toTopOf="@id/edtTime"
+        app:layout_constraintBottom_toBottomOf="@id/edtTime"
+        app:layout_constraintHorizontal_bias="0.9"
+        android:onClick="decreaseTime"/>
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="+"
+        app:layout_constraintLeft_toRightOf="@id/edtTime"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="@id/edtTime"
+        app:layout_constraintBottom_toBottomOf="@id/edtTime"
+        app:layout_constraintHorizontal_bias="0.1"
+        android:onClick="increaseTime"/>
 
     <Button
         android:layout_width="wrap_content"

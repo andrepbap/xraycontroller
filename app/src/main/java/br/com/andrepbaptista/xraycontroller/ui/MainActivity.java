@@ -6,6 +6,7 @@ import android.bluetooth.BluetoothGattCharacteristic;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v4.content.ContextCompat;
 import android.view.View;
 import android.widget.Button;
@@ -24,12 +25,13 @@ public class MainActivity extends Activity {
     private TextView lblScanning;
     private Button btnSearch;
     private EditText edtTime;
+    private Handler handler = new Handler();
 
     private final int PERMISSION_REQUEST_CODE = 1;
 
     private List<String> times;
     private int timesListIndex = 0;
-    private final int TIMES_LIST_MAX_INDEX = 13;
+    private final int TIMES_LIST_MAX_INDEX = 14;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,7 +42,6 @@ public class MainActivity extends Activity {
 
         lblScanning = findViewById(R.id.lblScanning);
         btnSearch = findViewById(R.id.btnSearch);
-        btnSearch.setVisibility(View.GONE);
         edtTime = findViewById(R.id.edtTime);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
@@ -62,30 +63,55 @@ public class MainActivity extends Activity {
         BleHandler.getInstance(this).start(new BleHandler.BleCallback() {
             @Override
             public void onStartedExecution() {
-                lblScanning.setText(getString(R.string.scanning));
-                btnSearch.setVisibility(View.GONE);
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        lblScanning.setText(getString(R.string.scanning));
+                        btnSearch.setEnabled(false);
+                    }
+                });
             }
 
             @Override
             public void onServiceReady() {
-                lblScanning.setText(getString(R.string.searching_characteristic));
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        lblScanning.setText(getString(R.string.searching_characteristic));
+                    }
+                });
             }
 
             @Override
             public void onCharacteristicReady(BluetoothGattCharacteristic characteristic) {
-                lblScanning.setText(getString(R.string.connected));
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        lblScanning.setText(getString(R.string.connected));
+                    }
+                });
                 refreshCharacteristic(characteristic);
             }
 
             @Override
             public void onDeviceReady() {
-                lblScanning.setText(getString(R.string.searching_service));
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        lblScanning.setText(getString(R.string.searching_service));
+                    }
+                });
             }
 
             @Override
             public void onError() {
-                lblScanning.setText(getString(R.string.connection_error));
-                btnSearch.setVisibility(View.VISIBLE);
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        lblScanning.setText(getString(R.string.connection_error));
+                        btnSearch.setEnabled(true);
+                    }
+                });
             }
         });
     }
@@ -124,21 +150,36 @@ public class MainActivity extends Activity {
 
             @Override
             public void onError() {
-                Toast.makeText(MainActivity.this, getString(R.string.error_set_time), Toast.LENGTH_LONG).show();
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(MainActivity.this, getString(R.string.error_set_time), Toast.LENGTH_LONG).show();
+                    }
+                });
             }
         });
+    }
+
+    public void searchDevices(View v) {
+        init();
     }
 
     private void refreshCharacteristic(BluetoothGattCharacteristic characteristic) {
         String hexString = ValuesUtils.byteArrayToHexString(characteristic.getValue());
 
         int timesListIndex = ValuesUtils.hexStringToTimeListIndex(hexString);
-        MainActivity.this.timesListIndex = timesListIndex;
-        String timeString = times.get(MainActivity.this.timesListIndex);
+        this.timesListIndex = timesListIndex;
 
-        edtTime.setEnabled(true);
-        edtTime.setText(timeString);
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                String timeString = times.get(MainActivity.this.timesListIndex);
 
-        Toast.makeText(MainActivity.this, getString(R.string.success_set_time) + timeString, Toast.LENGTH_LONG).show();
+                edtTime.setEnabled(true);
+                edtTime.setText(timeString);
+
+                Toast.makeText(MainActivity.this, MainActivity.this.getString(R.string.success_set_time) + " " + timeString, Toast.LENGTH_LONG).show();
+            }
+        });
     }
 }

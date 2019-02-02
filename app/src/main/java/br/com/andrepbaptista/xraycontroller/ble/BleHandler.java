@@ -23,6 +23,7 @@ public class BleHandler extends BluetoothGattCallback implements BluetoothAdapte
     private final BluetoothAdapter mBluetoothAdapter;
     private BluetoothGatt bluetoothGatt;
     private BluetoothGattCharacteristic characteristic;
+    private BluetoothGattService service;
 
     private boolean deviceFound = false;
     private static final long SCAN_PERIOD = 10000;
@@ -64,11 +65,18 @@ public class BleHandler extends BluetoothGattCallback implements BluetoothAdapte
     }
 
     public void killBle() {
-        if (bluetoothGatt == null) {
-            return;
+        if (service != null) {
+            service = null;
         }
-        bluetoothGatt.close();
-        bluetoothGatt = null;
+
+        if (characteristic != null) {
+            characteristic = null;
+        }
+
+        if (bluetoothGatt != null) {
+            bluetoothGatt.close();
+            bluetoothGatt = null;
+        }
     }
 
     public void start(BleCallback bleCallback) {
@@ -80,9 +88,7 @@ public class BleHandler extends BluetoothGattCallback implements BluetoothAdapte
         this.characteristicCallback = characteristicCallback;
 
         if(characteristic != null){
-            String characteristicValue = ValuesUtils.timeToHexString(value);
-
-            characteristic.setValue(ValuesUtils.hexStringToByteArray(characteristicValue));
+            characteristic.setValue(ValuesUtils.hexStringToByteArray(value));
             bluetoothGatt.writeCharacteristic(characteristic);
         } else {
             characteristicCallback.onError();
@@ -110,23 +116,28 @@ public class BleHandler extends BluetoothGattCallback implements BluetoothAdapte
 
     @Override
     public void onLeScan(BluetoothDevice device, int rssi, byte[] scanRecord) {
-        bleCallback.onDeviceReady();
-        deviceFound = true;
-        bluetoothGatt = device.connectGatt(context, false, this);
+        if(device.getName().equals(context.getString(R.string.ble_name))){
+            deviceFound = true;
+            bluetoothGatt = device.connectGatt(context, false, this);
+
+            bleCallback.onDeviceReady();
+        }
     }
 
     @Override
     public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
+        mBluetoothAdapter.stopLeScan(BleHandler.this);
         gatt.discoverServices();
     }
 
     @Override
     public void onServicesDiscovered(BluetoothGatt gatt, int status) {
         if (status == BluetoothGatt.GATT_SUCCESS) {
-            bleCallback.onServiceReady();
-
             BluetoothGattService service = gatt.getService(SERVICE_UUID);
+            this.service = service;
             gatt.readCharacteristic(service.getCharacteristic(CHARACTERISTIC_UUID));
+
+            bleCallback.onServiceReady();
         } else {
             bleCallback.onError();
         }
@@ -137,9 +148,9 @@ public class BleHandler extends BluetoothGattCallback implements BluetoothAdapte
                                      BluetoothGattCharacteristic characteristic,
                                      int status) {
         if (status == BluetoothGatt.GATT_SUCCESS) {
-            bleCallback.onCharacteristicReady(characteristic);
-
             BleHandler.this.characteristic = characteristic;
+
+            bleCallback.onCharacteristicReady(characteristic);
         } else {
             bleCallback.onError();
         }
@@ -150,7 +161,7 @@ public class BleHandler extends BluetoothGattCallback implements BluetoothAdapte
                                       BluetoothGattCharacteristic characteristic,
                                       int status) {
         if (status == BluetoothGatt.GATT_SUCCESS) {
-            characteristicCallback.onChange(characteristic);
+            characteristicCallback.onChange(BleHandler.this.characteristic);
         } else {
             characteristicCallback.onError();
         }

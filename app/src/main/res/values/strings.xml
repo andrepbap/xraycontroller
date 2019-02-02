@@ -1,13 +1,15 @@
 <resources>
     <string name="app_name">Xray Controller</string>
+    <string name="ble_name">Global Access</string>
     <string name="error_set_time">Não foi possível modificar o tempo.</string>
     <string name="success_set_time">Tempo modificado com sucesso para </string>
     <string name="connection_error">"A comunicação com o dispositivo falhou.</string>
-    <string name="scanning">rocurando dispositivo...</string>
+    <string name="scanning">Procurando dispositivo...</string>
     <string name="searching_service">Dispositivo encontrado! Buscando serviço...</string>
     <string name="searching_characteristic">Serviço encontrado! Lendo característica...</string>
     <string name="connected">Tudo Pronto!</string>
+    <string name="disconnected">Dispositivo desconectado</string>
 
-    <string name="service_uuid">b8d2d47e-9f5b-43e0-a2ef-a243dc862164!</string>
+    <string name="service_uuid">b8d2d47e-9f5b-43e0-a2ef-a243dc862164</string>
     <string name="characteristic_uuid">c0a00c1f-cb50-4a7a-a70f-a78b73fa1205</string>
 </resources>

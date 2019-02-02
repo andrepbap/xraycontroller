@@ -38,47 +38,50 @@ public class ValuesUtils {
         String value;
 
         switch (time) {
-            case "0,1":
+            case "0,05":
                 value = "01";
                 break;
-            case "0,2":
+            case "0,10":
                 value = "02";
                 break;
-            case "0,3":
+            case "0,20":
                 value = "03";
                 break;
-            case "0,5":
+            case "0,30":
                 value = "04";
                 break;
-            case "0,8":
+            case "0,50":
                 value = "05";
                 break;
-            case "10":
+            case "0,80":
                 value = "06";
                 break;
-            case "15":
+            case "1,00":
                 value = "07";
                 break;
-            case "20":
+            case "1,50":
                 value = "08";
                 break;
-            case "30":
+            case "2,00":
                 value = "09";
                 break;
-            case "40":
+            case "3,00":
                 value = "0A";
                 break;
-            case "50":
+            case "4,00":
                 value = "0B";
                 break;
-            case "60":
+            case "5,00":
                 value = "0C";
                 break;
-            case "80":
+            case "6,00":
                 value = "0D";
                 break;
-            case "100":
+            case "8,00":
                 value = "0E";
+                break;
+            case "10,0":
+                value = "0F";
                 break;
             default:
                 value = "01";
@@ -123,6 +126,8 @@ public class ValuesUtils {
                 return 12;
             case "0E":
                 return 13;
+            case "0F":
+                return 14;
             default:
                 return 0;
         }
@@ -132,20 +137,21 @@ public class ValuesUtils {
     public static List<String> getTimesList() {
         List<String> times = new ArrayList<>();
 
-        times.add(0 ,"0,1");
-        times.add(1 ,"0,2");
-        times.add(2 ,"0,3");
-        times.add(3 ,"0,5");
-        times.add(4 ,"0,8");
-        times.add(5 ,"10");
-        times.add(6 ,"15");
-        times.add(7 ,"20");
-        times.add(8 ,"30");
-        times.add(9 ,"40");
-        times.add(10 ,"50");
-        times.add(11 ,"60");
-        times.add(12 ,"80");
-        times.add(13 ,"100");
+        times.add(0 ,"0,05");
+        times.add(1 ,"0,10");
+        times.add(2 ,"0,20");
+        times.add(3 ,"0,30");
+        times.add(4 ,"0,50");
+        times.add(5 ,"0,80");
+        times.add(6 ,"1,00");
+        times.add(7 ,"1,50");
+        times.add(8 ,"2,00");
+        times.add(9 ,"3,00");
+        times.add(10 ,"4,00");
+        times.add(11 ,"5,00");
+        times.add(12 ,"6,00");
+        times.add(13 ,"8,00");
+        times.add(14 ,"10,0");
 
         return times;
     }

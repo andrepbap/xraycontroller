@@ -24,6 +24,9 @@ public class MainActivity extends Activity {
 
     private TextView lblScanning;
     private Button btnSearch;
+    private Button btnAddTime;
+    private Button btnSubTime;
+    private Button btnConfirm;
     private EditText edtTime;
     private Handler handler = new Handler();
 
@@ -42,7 +45,15 @@ public class MainActivity extends Activity {
 
         lblScanning = findViewById(R.id.lblScanning);
         btnSearch = findViewById(R.id.btnSearch);
+        btnAddTime = findViewById(R.id.btnAddTime);
+        btnSubTime = findViewById(R.id.btnSubTime);
+        btnConfirm = findViewById(R.id.btnConfirm);
         edtTime = findViewById(R.id.edtTime);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
                 && ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -50,68 +61,80 @@ public class MainActivity extends Activity {
         } else {
             init();
         }
-
     }
 
     @Override
-    protected void onDestroy() {
-        super.onDestroy();
+    protected void onStop() {
+        super.onStop();
         BleHandler.getInstance(this).killBle();
+        btnSearch.setVisibility(View.VISIBLE);
+    }
+
+    private void enableUI() {
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                btnAddTime.setEnabled(true);
+                btnSubTime.setEnabled(true);
+                btnConfirm.setEnabled(true);
+                edtTime.setEnabled(true);
+            }
+        });
+    }
+
+    private void enableUIInErrorState() {
+        disableUI();
+
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                btnSearch.setVisibility(View.VISIBLE);
+            }
+        });
+    }
+
+    private void disableUI() {
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                btnSearch.setVisibility(View.GONE);
+                btnAddTime.setEnabled(false);
+                btnSubTime.setEnabled(false);
+                btnConfirm.setEnabled(false);
+                edtTime.setEnabled(false);
+            }
+        });
     }
 
     private void init() {
         BleHandler.getInstance(this).start(new BleHandler.BleCallback() {
             @Override
             public void onStartedExecution() {
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        lblScanning.setText(getString(R.string.scanning));
-                        btnSearch.setEnabled(false);
-                    }
-                });
+                lblScanning.setText(getString(R.string.scanning));
+                disableUI();
             }
 
             @Override
             public void onServiceReady() {
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        lblScanning.setText(getString(R.string.searching_characteristic));
-                    }
-                });
+                lblScanning.setText(getString(R.string.searching_characteristic));
             }
 
             @Override
             public void onCharacteristicReady(BluetoothGattCharacteristic characteristic) {
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        lblScanning.setText(getString(R.string.connected));
-                    }
-                });
+                lblScanning.setText(getString(R.string.connected));
+                enableUI();
                 refreshCharacteristic(characteristic);
             }
 
             @Override
             public void onDeviceReady() {
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        lblScanning.setText(getString(R.string.searching_service));
-                    }
-                });
+                lblScanning.setText(getString(R.string.searching_service));
             }
 
             @Override
             public void onError() {
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        lblScanning.setText(getString(R.string.connection_error));
-                        btnSearch.setEnabled(true);
-                    }
-                });
+                lblScanning.setText(getString(R.string.connection_error));
+                enableUIInErrorState();
             }
         });
     }
@@ -124,18 +147,18 @@ public class MainActivity extends Activity {
     }
 
     public void increaseTime(View v) {
-        if(timesListIndex == TIMES_LIST_MAX_INDEX) {
+        if (timesListIndex == TIMES_LIST_MAX_INDEX) {
             return;
         }
-        timesListIndex ++;
+        timesListIndex++;
         edtTime.setText(times.get(timesListIndex));
     }
 
     public void decreaseTime(View v) {
-        if(timesListIndex == 0) {
+        if (timesListIndex == 0) {
             return;
         }
-        timesListIndex --;
+        timesListIndex--;
         edtTime.setText(times.get(timesListIndex));
     }
 
@@ -174,8 +197,6 @@ public class MainActivity extends Activity {
             @Override
             public void run() {
                 String timeString = times.get(MainActivity.this.timesListIndex);
-
-                edtTime.setEnabled(true);
                 edtTime.setText(timeString);
 
                 Toast.makeText(MainActivity.this, MainActivity.this.getString(R.string.success_set_time) + " " + timeString, Toast.LENGTH_LONG).show();

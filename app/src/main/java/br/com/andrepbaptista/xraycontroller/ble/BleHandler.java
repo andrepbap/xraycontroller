@@ -9,44 +9,51 @@ import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.os.Handler;
+
 import java.util.UUID;
 
 import br.com.andrepbaptista.xraycontroller.R;
 import br.com.andrepbaptista.xraycontroller.util.ValuesUtils;
 
-public class BleHandler extends BluetoothGattCallback implements BluetoothAdapter.LeScanCallback{
+public class BleHandler extends BluetoothGattCallback implements BluetoothAdapter.LeScanCallback {
 
     private static BleHandler bleHandler;
     private Context context;
-    private Handler mHandler = new Handler();
+    private Handler mHandler;
+    private Runnable runnable;
 
     private final BluetoothAdapter mBluetoothAdapter;
     private BluetoothGatt bluetoothGatt;
     private BluetoothGattCharacteristic characteristic;
     private BluetoothGattService service;
 
-    private boolean deviceFound = false;
-    private static final long SCAN_PERIOD = 10000;
+    private boolean deviceFound;
+    private static final long SCAN_PERIOD = 5000;
     private final UUID SERVICE_UUID;
     private final UUID CHARACTERISTIC_UUID;
 
     public interface BleCallback {
         void onStartedExecution();
+
         void onServiceReady();
+
         void onCharacteristicReady(BluetoothGattCharacteristic characteristic);
+
         void onDeviceReady();
+
         void onError();
     }
 
     public interface CharacteristicCallback {
         void onChange(BluetoothGattCharacteristic characteristic);
+
         void onError();
     }
 
     private BleCallback bleCallback;
     private CharacteristicCallback characteristicCallback;
 
-    private BleHandler(Context context){
+    private BleHandler(Context context) {
         this.context = context;
         SERVICE_UUID = UUID.fromString(context.getString(R.string.service_uuid));
         CHARACTERISTIC_UUID = UUID.fromString(context.getString(R.string.characteristic_uuid));
@@ -57,7 +64,7 @@ public class BleHandler extends BluetoothGattCallback implements BluetoothAdapte
     }
 
     public static BleHandler getInstance(Context context) {
-        if(bleHandler == null) {
+        if (bleHandler == null) {
             bleHandler = new BleHandler(context);
         }
 
@@ -65,29 +72,31 @@ public class BleHandler extends BluetoothGattCallback implements BluetoothAdapte
     }
 
     public void killBle() {
-        if (service != null) {
-            service = null;
-        }
+        killScan();
 
-        if (characteristic != null) {
-            characteristic = null;
-        }
-
-        if (bluetoothGatt != null) {
+        if (bluetoothGatt != null
+                && mBluetoothAdapter != null) {
             bluetoothGatt.close();
-            bluetoothGatt = null;
+            mBluetoothAdapter.disable();
         }
     }
 
     public void start(BleCallback bleCallback) {
         this.bleCallback = bleCallback;
+
+        if(!mBluetoothAdapter.isEnabled()) {
+            mBluetoothAdapter.enable();
+        }
+
+        deviceFound = false;
+
         scanLeDevice(true);
     }
 
     public void writeCharacteristic(String value, CharacteristicCallback characteristicCallback) {
         this.characteristicCallback = characteristicCallback;
 
-        if(characteristic != null){
+        if (characteristic != null) {
             characteristic.setValue(ValuesUtils.hexStringToByteArray(value));
             bluetoothGatt.writeCharacteristic(characteristic);
         } else {
@@ -95,17 +104,23 @@ public class BleHandler extends BluetoothGattCallback implements BluetoothAdapte
         }
     }
 
-    private void scanLeDevice(final boolean enable) {
-
-        if (enable) {
-            mHandler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    if (!deviceFound) {
-                        mBluetoothAdapter.stopLeScan(BleHandler.this);
-                    }
+    private void buildStopScanRunnable() {
+        runnable = new Runnable() {
+            @Override
+            public void run() {
+                if (!deviceFound) {
+                    mBluetoothAdapter.stopLeScan(BleHandler.this);
+                    bleCallback.onError();
                 }
-            }, SCAN_PERIOD);
+            }
+        };
+    }
+
+    private void scanLeDevice(final boolean enable) {
+        if (enable) {
+            buildStopScanRunnable();
+            mHandler = new Handler();
+            mHandler.postDelayed(runnable, SCAN_PERIOD);
 
             bleCallback.onStartedExecution();
             mBluetoothAdapter.startLeScan(this);
@@ -114,19 +129,29 @@ public class BleHandler extends BluetoothGattCallback implements BluetoothAdapte
         }
     }
 
+    private void killScan() {
+        mBluetoothAdapter.stopLeScan(this);
+
+        if (mHandler != null
+                && runnable != null) {
+            mHandler.removeCallbacks(runnable);
+            mHandler = null;
+            runnable = null;
+        }
+    }
+
     @Override
     public void onLeScan(BluetoothDevice device, int rssi, byte[] scanRecord) {
-        if(device.getName().equals(context.getString(R.string.ble_name))){
+        if (device.getName() != null && device.getName().equals(context.getString(R.string.ble_name))) {
             deviceFound = true;
             bluetoothGatt = device.connectGatt(context, false, this);
-
             bleCallback.onDeviceReady();
         }
     }
 
     @Override
     public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
-        mBluetoothAdapter.stopLeScan(BleHandler.this);
+        killScan();
         gatt.discoverServices();
     }
 

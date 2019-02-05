@@ -46,6 +46,7 @@
         app:layout_constraintVertical_bias="0"/>
 
     <Button
+        android:id="@+id/btnAddTime"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="-"
@@ -57,6 +58,7 @@
         android:onClick="decreaseTime"/>
 
     <Button
+        android:id="@+id/btnSubTime"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="+"
@@ -68,6 +70,7 @@
         android:onClick="increaseTime"/>
 
     <Button
+        android:id="@+id/btnConfirm"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         app:layout_constraintTop_toBottomOf="@id/edtTime"

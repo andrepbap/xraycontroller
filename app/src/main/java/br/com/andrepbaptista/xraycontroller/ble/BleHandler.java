@@ -25,8 +25,6 @@ public class BleHandler extends BluetoothGattCallback implements BluetoothAdapte
     private final BluetoothAdapter mBluetoothAdapter;
     private BluetoothGatt bluetoothGatt;
     private BluetoothGattCharacteristic characteristic;
-    private BluetoothGattService service;
-
     private boolean deviceFound;
     private static final long SCAN_PERIOD = 5000;
     private final UUID SERVICE_UUID;
@@ -159,7 +157,6 @@ public class BleHandler extends BluetoothGattCallback implements BluetoothAdapte
     public void onServicesDiscovered(BluetoothGatt gatt, int status) {
         if (status == BluetoothGatt.GATT_SUCCESS) {
             BluetoothGattService service = gatt.getService(SERVICE_UUID);
-            this.service = service;
             gatt.readCharacteristic(service.getCharacteristic(CHARACTERISTIC_UUID));
 
             bleCallback.onServiceReady();

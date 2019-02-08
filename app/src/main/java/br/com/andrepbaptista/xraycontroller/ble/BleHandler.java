@@ -24,37 +24,46 @@ public class BleHandler extends BluetoothGattCallback implements BluetoothAdapte
 
     private final BluetoothAdapter mBluetoothAdapter;
     private BluetoothGatt bluetoothGatt;
-    private BluetoothGattCharacteristic characteristic;
+    private BluetoothGattCharacteristic timeCharacteristic;
     private boolean deviceFound;
     private static final long SCAN_PERIOD = 5000;
     private final UUID SERVICE_UUID;
-    private final UUID CHARACTERISTIC_UUID;
+    private final UUID TIME_CHARACTERISTIC_UUID;
+    private final UUID SHOTS_CHARACTERISTIC_UUID;
 
     public interface BleCallback {
         void onStartedExecution();
 
         void onServiceReady();
 
-        void onCharacteristicReady(BluetoothGattCharacteristic characteristic);
+        void onTimeCharacteristicReady(BluetoothGattCharacteristic characteristic);
 
         void onDeviceReady();
 
         void onError();
     }
 
-    public interface CharacteristicCallback {
+    public interface TimeCharacteristicCallback {
         void onChange(BluetoothGattCharacteristic characteristic);
 
         void onError();
     }
 
+    public interface ShotCharacteristicCallback {
+        void onRead(BluetoothGattCharacteristic characteristic);
+
+        void onError();
+    }
+
     private BleCallback bleCallback;
-    private CharacteristicCallback characteristicCallback;
+    private TimeCharacteristicCallback timeCharacteristicCallback;
+    private ShotCharacteristicCallback shotCharacteristicCallback;
 
     private BleHandler(Context context) {
         this.context = context;
         SERVICE_UUID = UUID.fromString(context.getString(R.string.service_uuid));
-        CHARACTERISTIC_UUID = UUID.fromString(context.getString(R.string.characteristic_uuid));
+        TIME_CHARACTERISTIC_UUID = UUID.fromString(context.getString(R.string.time_characteristic_uuid));
+        SHOTS_CHARACTERISTIC_UUID = UUID.fromString(context.getString(R.string.shots_characteristic_uuid));
 
         final BluetoothManager bluetoothManager =
                 (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
@@ -91,14 +100,24 @@ public class BleHandler extends BluetoothGattCallback implements BluetoothAdapte
         scanLeDevice(true);
     }
 
-    public void writeCharacteristic(String value, CharacteristicCallback characteristicCallback) {
-        this.characteristicCallback = characteristicCallback;
+    public void writeTimeCharacteristic(String value, TimeCharacteristicCallback timeCharacteristicCallback) {
+        this.timeCharacteristicCallback = timeCharacteristicCallback;
 
-        if (characteristic != null) {
-            characteristic.setValue(ValuesUtils.hexStringToByteArray(value));
-            bluetoothGatt.writeCharacteristic(characteristic);
+        if (timeCharacteristic != null) {
+            timeCharacteristic.setValue(ValuesUtils.hexStringToByteArray(value));
+            bluetoothGatt.writeCharacteristic(timeCharacteristic);
         } else {
-            characteristicCallback.onError();
+            timeCharacteristicCallback.onError();
+        }
+    }
+
+    public void readShotCharacteristic(ShotCharacteristicCallback shotCharacteristicCallback) {
+        BluetoothGattService service = bluetoothGatt.getService(SERVICE_UUID);
+        if(service != null) {
+            this.shotCharacteristicCallback = shotCharacteristicCallback;
+            bluetoothGatt.readCharacteristic(service.getCharacteristic(SHOTS_CHARACTERISTIC_UUID));
+        } else {
+            this.shotCharacteristicCallback.onError();
         }
     }
 
@@ -156,8 +175,7 @@ public class BleHandler extends BluetoothGattCallback implements BluetoothAdapte
     @Override
     public void onServicesDiscovered(BluetoothGatt gatt, int status) {
         if (status == BluetoothGatt.GATT_SUCCESS) {
-            BluetoothGattService service = gatt.getService(SERVICE_UUID);
-            gatt.readCharacteristic(service.getCharacteristic(CHARACTERISTIC_UUID));
+            gatt.readCharacteristic(gatt.getService(SERVICE_UUID).getCharacteristic(TIME_CHARACTERISTIC_UUID));
 
             bleCallback.onServiceReady();
         } else {
@@ -170,9 +188,14 @@ public class BleHandler extends BluetoothGattCallback implements BluetoothAdapte
                                      BluetoothGattCharacteristic characteristic,
                                      int status) {
         if (status == BluetoothGatt.GATT_SUCCESS) {
-            BleHandler.this.characteristic = characteristic;
 
-            bleCallback.onCharacteristicReady(characteristic);
+            if(characteristic.getUuid().equals(TIME_CHARACTERISTIC_UUID)) {
+                timeCharacteristic = characteristic;
+                bleCallback.onTimeCharacteristicReady(characteristic);
+            } else if(characteristic.getUuid().equals(SHOTS_CHARACTERISTIC_UUID)) {
+                shotCharacteristicCallback.onRead(characteristic);
+            }
+
         } else {
             bleCallback.onError();
         }
@@ -183,9 +206,9 @@ public class BleHandler extends BluetoothGattCallback implements BluetoothAdapte
                                       BluetoothGattCharacteristic characteristic,
                                       int status) {
         if (status == BluetoothGatt.GATT_SUCCESS) {
-            characteristicCallback.onChange(BleHandler.this.characteristic);
+            timeCharacteristicCallback.onChange(BleHandler.this.timeCharacteristic);
         } else {
-            characteristicCallback.onError();
+            timeCharacteristicCallback.onError();
         }
     }
 }

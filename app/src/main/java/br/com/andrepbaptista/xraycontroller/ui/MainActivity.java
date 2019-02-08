@@ -28,6 +28,7 @@ public class MainActivity extends Activity {
     private Button btnSubTime;
     private Button btnConfirm;
     private EditText edtTime;
+    private TextView lblShots;
     private Handler handler = new Handler();
 
     private final int PERMISSION_REQUEST_CODE = 1;
@@ -49,6 +50,7 @@ public class MainActivity extends Activity {
         btnSubTime = findViewById(R.id.btnSubTime);
         btnConfirm = findViewById(R.id.btnConfirm);
         edtTime = findViewById(R.id.edtTime);
+        lblShots = findViewById(R.id.lblShots);
     }
 
     @Override
@@ -120,10 +122,10 @@ public class MainActivity extends Activity {
             }
 
             @Override
-            public void onCharacteristicReady(BluetoothGattCharacteristic characteristic) {
+            public void onTimeCharacteristicReady(BluetoothGattCharacteristic characteristic) {
                 lblScanning.setText(getString(R.string.connected));
                 enableUI();
-                refreshCharacteristic(characteristic);
+                refreshTimeCharacteristic(characteristic);
             }
 
             @Override
@@ -165,10 +167,10 @@ public class MainActivity extends Activity {
     public void setTime(View v) {
         String characteristicValue = ValuesUtils.timeToHexString(edtTime.getText().toString());
 
-        BleHandler.getInstance(this).writeCharacteristic(characteristicValue, new BleHandler.CharacteristicCallback() {
+        BleHandler.getInstance(this).writeTimeCharacteristic(characteristicValue, new BleHandler.TimeCharacteristicCallback() {
             @Override
             public void onChange(BluetoothGattCharacteristic characteristic) {
-                refreshCharacteristic(characteristic);
+                refreshTimeCharacteristic(characteristic);
             }
 
             @Override
@@ -183,11 +185,25 @@ public class MainActivity extends Activity {
         });
     }
 
+    public void readShots(View v) {
+        BleHandler.getInstance(this).readShotCharacteristic(new BleHandler.ShotCharacteristicCallback() {
+            @Override
+            public void onRead(BluetoothGattCharacteristic characteristic) {
+                refreshShotCharacteristic(characteristic);
+            }
+
+            @Override
+            public void onError() {
+                Toast.makeText(MainActivity.this, getString(R.string.error_read_shots), Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
     public void searchDevices(View v) {
         init();
     }
 
-    private void refreshCharacteristic(BluetoothGattCharacteristic characteristic) {
+    private void refreshTimeCharacteristic(BluetoothGattCharacteristic characteristic) {
         String hexString = ValuesUtils.byteArrayToHexString(characteristic.getValue());
 
         int timesListIndex = ValuesUtils.hexStringToTimeListIndex(hexString);
@@ -200,6 +216,16 @@ public class MainActivity extends Activity {
                 edtTime.setText(timeString);
 
                 Toast.makeText(MainActivity.this, MainActivity.this.getString(R.string.success_set_time) + " " + timeString, Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private void refreshShotCharacteristic(final BluetoothGattCharacteristic characteristic) {
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                final String hexString = ValuesUtils.byteArrayToHexString(characteristic.getValue());
+                lblShots.setText(hexString);
             }
         });
     }

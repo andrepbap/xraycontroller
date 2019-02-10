@@ -27,6 +27,7 @@ public class MainActivity extends Activity {
     private Button btnAddTime;
     private Button btnSubTime;
     private Button btnConfirm;
+    private Button btnShots;
     private EditText edtTime;
     private TextView lblShots;
     private Handler handler = new Handler();
@@ -49,6 +50,7 @@ public class MainActivity extends Activity {
         btnAddTime = findViewById(R.id.btnAddTime);
         btnSubTime = findViewById(R.id.btnSubTime);
         btnConfirm = findViewById(R.id.btnConfirm);
+        btnShots = findViewById(R.id.btnShots);
         edtTime = findViewById(R.id.edtTime);
         lblShots = findViewById(R.id.lblShots);
     }
@@ -80,6 +82,7 @@ public class MainActivity extends Activity {
                 btnSubTime.setEnabled(true);
                 btnConfirm.setEnabled(true);
                 edtTime.setEnabled(true);
+                btnShots.setEnabled(true);
             }
         });
     }
@@ -104,6 +107,7 @@ public class MainActivity extends Activity {
                 btnSubTime.setEnabled(false);
                 btnConfirm.setEnabled(false);
                 edtTime.setEnabled(false);
+                btnShots.setEnabled(false);
             }
         });
     }
@@ -221,12 +225,9 @@ public class MainActivity extends Activity {
     }
 
     private void refreshShotCharacteristic(final BluetoothGattCharacteristic characteristic) {
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                final String hexString = ValuesUtils.byteArrayToHexString(characteristic.getValue());
-                lblShots.setText(hexString);
-            }
-        });
+        String hexString = ValuesUtils.byteArrayToHexString(characteristic.getValue());
+        String hexShots = hexString.substring(20);
+        int shots = Integer.parseInt(hexShots, 16);
+        lblShots.setText(String.valueOf(shots));
     }
 }

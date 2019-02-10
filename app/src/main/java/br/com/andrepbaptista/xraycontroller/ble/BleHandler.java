@@ -85,6 +85,7 @@ public class BleHandler extends BluetoothGattCallback implements BluetoothAdapte
                 && mBluetoothAdapter != null) {
             bluetoothGatt.close();
             mBluetoothAdapter.disable();
+            mBluetoothAdapter.enable();
         }
     }
 

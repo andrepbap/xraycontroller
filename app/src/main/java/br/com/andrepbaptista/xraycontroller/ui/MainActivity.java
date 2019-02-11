@@ -116,30 +116,55 @@ public class MainActivity extends Activity {
         BleHandler.getInstance(this).start(new BleHandler.BleCallback() {
             @Override
             public void onStartedExecution() {
-                lblScanning.setText(getString(R.string.scanning));
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        lblScanning.setText(getString(R.string.scanning));
+                        }
+                    });
                 disableUI();
             }
 
             @Override
             public void onServiceReady() {
-                lblScanning.setText(getString(R.string.searching_characteristic));
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        lblScanning.setText(getString(R.string.searching_characteristic));
+                    }
+                });
             }
 
             @Override
             public void onTimeCharacteristicReady(BluetoothGattCharacteristic characteristic) {
-                lblScanning.setText(getString(R.string.connected));
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        lblScanning.setText(getString(R.string.connected));
+                    }
+                });
                 enableUI();
                 refreshTimeCharacteristic(characteristic);
             }
 
             @Override
             public void onDeviceReady() {
-                lblScanning.setText(getString(R.string.searching_service));
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        lblScanning.setText(getString(R.string.searching_service));
+                    }
+                });
             }
 
             @Override
             public void onError() {
-                lblScanning.setText(getString(R.string.connection_error));
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        lblScanning.setText(getString(R.string.connection_error));
+                    }
+                });
                 enableUIInErrorState();
             }
         });

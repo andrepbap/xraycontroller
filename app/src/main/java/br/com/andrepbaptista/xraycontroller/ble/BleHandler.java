@@ -22,6 +22,7 @@ public class BleHandler extends BluetoothGattCallback implements BluetoothAdapte
     private Handler mHandler;
     private Runnable runnable;
 
+    private BluetoothDevice device;
     private final BluetoothAdapter mBluetoothAdapter;
     private BluetoothGatt bluetoothGatt;
     private BluetoothGattCharacteristic timeCharacteristic;
@@ -81,10 +82,9 @@ public class BleHandler extends BluetoothGattCallback implements BluetoothAdapte
     public void killBle() {
         killScan();
 
-        if (bluetoothGatt != null
-                && mBluetoothAdapter != null) {
+        if (bluetoothGatt != null) {
+            bluetoothGatt.disconnect();
             bluetoothGatt.close();
-            mBluetoothAdapter.disable();
         }
     }
 
@@ -93,6 +93,13 @@ public class BleHandler extends BluetoothGattCallback implements BluetoothAdapte
 
         if(!mBluetoothAdapter.isEnabled()) {
             mBluetoothAdapter.enable();
+        }
+
+        if(device != null) {
+            bleCallback.onStartedExecution();
+            bluetoothGatt = device.connectGatt(context, false, this);
+            bluetoothGatt.discoverServices();
+            return;
         }
 
         deviceFound = false;
@@ -148,6 +155,7 @@ public class BleHandler extends BluetoothGattCallback implements BluetoothAdapte
 
     private void killScan() {
         mBluetoothAdapter.stopLeScan(this);
+        mBluetoothAdapter.cancelDiscovery();
 
         if (mHandler != null
                 && runnable != null) {
@@ -161,6 +169,7 @@ public class BleHandler extends BluetoothGattCallback implements BluetoothAdapte
     public void onLeScan(BluetoothDevice device, int rssi, byte[] scanRecord) {
         if (device.getName() != null && device.getName().equals(context.getString(R.string.ble_name))) {
             deviceFound = true;
+            this.device = device;
             bluetoothGatt = device.connectGatt(context, false, this);
             bleCallback.onDeviceReady();
         }

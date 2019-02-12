@@ -27,7 +27,9 @@ public class MainActivity extends Activity {
     private Button btnAddTime;
     private Button btnSubTime;
     private Button btnConfirm;
+    private Button btnShots;
     private EditText edtTime;
+    private TextView lblShots;
     private Handler handler = new Handler();
 
     private final int PERMISSION_REQUEST_CODE = 1;
@@ -48,7 +50,9 @@ public class MainActivity extends Activity {
         btnAddTime = findViewById(R.id.btnAddTime);
         btnSubTime = findViewById(R.id.btnSubTime);
         btnConfirm = findViewById(R.id.btnConfirm);
+        btnShots = findViewById(R.id.btnShots);
         edtTime = findViewById(R.id.edtTime);
+        lblShots = findViewById(R.id.lblShots);
     }
 
     @Override
@@ -78,6 +82,7 @@ public class MainActivity extends Activity {
                 btnSubTime.setEnabled(true);
                 btnConfirm.setEnabled(true);
                 edtTime.setEnabled(true);
+                btnShots.setEnabled(true);
             }
         });
     }
@@ -102,6 +107,7 @@ public class MainActivity extends Activity {
                 btnSubTime.setEnabled(false);
                 btnConfirm.setEnabled(false);
                 edtTime.setEnabled(false);
+                btnShots.setEnabled(false);
             }
         });
     }
@@ -110,30 +116,55 @@ public class MainActivity extends Activity {
         BleHandler.getInstance(this).start(new BleHandler.BleCallback() {
             @Override
             public void onStartedExecution() {
-                lblScanning.setText(getString(R.string.scanning));
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        lblScanning.setText(getString(R.string.scanning));
+                        }
+                    });
                 disableUI();
             }
 
             @Override
             public void onServiceReady() {
-                lblScanning.setText(getString(R.string.searching_characteristic));
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        lblScanning.setText(getString(R.string.searching_characteristic));
+                    }
+                });
             }
 
             @Override
-            public void onCharacteristicReady(BluetoothGattCharacteristic characteristic) {
-                lblScanning.setText(getString(R.string.connected));
+            public void onTimeCharacteristicReady(BluetoothGattCharacteristic characteristic) {
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        lblScanning.setText(getString(R.string.connected));
+                    }
+                });
                 enableUI();
-                refreshCharacteristic(characteristic);
+                refreshTimeCharacteristic(characteristic);
             }
 
             @Override
             public void onDeviceReady() {
-                lblScanning.setText(getString(R.string.searching_service));
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        lblScanning.setText(getString(R.string.searching_service));
+                    }
+                });
             }
 
             @Override
             public void onError() {
-                lblScanning.setText(getString(R.string.connection_error));
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        lblScanning.setText(getString(R.string.connection_error));
+                    }
+                });
                 enableUIInErrorState();
             }
         });
@@ -165,10 +196,10 @@ public class MainActivity extends Activity {
     public void setTime(View v) {
         String characteristicValue = ValuesUtils.timeToHexString(edtTime.getText().toString());
 
-        BleHandler.getInstance(this).writeCharacteristic(characteristicValue, new BleHandler.CharacteristicCallback() {
+        BleHandler.getInstance(this).writeTimeCharacteristic(characteristicValue, new BleHandler.TimeCharacteristicCallback() {
             @Override
             public void onChange(BluetoothGattCharacteristic characteristic) {
-                refreshCharacteristic(characteristic);
+                refreshTimeCharacteristic(characteristic);
             }
 
             @Override
@@ -183,11 +214,25 @@ public class MainActivity extends Activity {
         });
     }
 
+    public void readShots(View v) {
+        BleHandler.getInstance(this).readShotCharacteristic(new BleHandler.ShotCharacteristicCallback() {
+            @Override
+            public void onRead(BluetoothGattCharacteristic characteristic) {
+                refreshShotCharacteristic(characteristic);
+            }
+
+            @Override
+            public void onError() {
+                Toast.makeText(MainActivity.this, getString(R.string.error_read_shots), Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
     public void searchDevices(View v) {
         init();
     }
 
-    private void refreshCharacteristic(BluetoothGattCharacteristic characteristic) {
+    private void refreshTimeCharacteristic(BluetoothGattCharacteristic characteristic) {
         String hexString = ValuesUtils.byteArrayToHexString(characteristic.getValue());
 
         int timesListIndex = ValuesUtils.hexStringToTimeListIndex(hexString);
@@ -202,5 +247,12 @@ public class MainActivity extends Activity {
                 Toast.makeText(MainActivity.this, MainActivity.this.getString(R.string.success_set_time) + " " + timeString, Toast.LENGTH_LONG).show();
             }
         });
+    }
+
+    private void refreshShotCharacteristic(final BluetoothGattCharacteristic characteristic) {
+        String hexString = ValuesUtils.byteArrayToHexString(characteristic.getValue());
+        String hexShots = hexString.substring(20);
+        int shots = Integer.parseInt(hexShots, 16);
+        lblShots.setText(String.valueOf(shots));
     }
 }
